@@ -5,6 +5,7 @@ import authRoutes from "./src/routes/auth.js";
 import productRoutes from "./src/routes/productRoutes.js";
 import auctionRoutes from "./src/routes/auctionRoutes.js";
 import redis from "./db/redis.js";
+import socketHandlers from "./src/sockets/index.js";
 
 const app = express();
 const httpServer = createServer(app);
@@ -16,6 +17,7 @@ app.use((req, res, next) => {
   req.io = io;
   next();
 });
+socketHandlers(io);
 
 app.use("/auth", authRoutes);
 
