@@ -39,10 +39,9 @@ export const createAuction = [authenticateToken, async (req, res) => {
 
     const { id, uuid } = auction;
 
-    console.log("🟩 Nueva subasta creada con ID:", id);
-    console.log("🟩 Guardando en Redis como: auction:" + id);
+    console.log("Nueva subasta creada con ID:", id);
+    console.log("Guardando en Redis como: auction:" + id);
 
-    // 👉 AHORA id ya existe
     await redis.hSet(`auction:${id}`, {
       current_price: start_price.toString(),
       start_price: start_price.toString(),
