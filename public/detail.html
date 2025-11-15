@@ -1,0 +1,176 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8"/>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>Subasta en Vivo</title>
+
+  <style>
+    body {
+      font-family: Arial, sans-serif;
+      background: #f1f1f1;
+      margin: 0;
+      padding: 0;
+      display: flex;
+      justify-content: center;
+    }
+
+    .container {
+      width: 90%;
+      max-width: 700px;
+      background: white;
+      margin-top: 20px;
+      padding: 25px;
+      border-radius: 12px;
+      box-shadow: 0 5px 10px rgba(0,0,0,0.1);
+    }
+
+    #bids {
+      max-height: 250px;
+      overflow-y: auto;
+      padding: 10px;
+      background: #f9f9f9;
+      border-radius: 8px;
+      margin-top: 10px;
+    }
+
+    .bid-item {
+      padding: 8px;
+      border-bottom: 1px solid #ddd;
+    }
+
+    .bid-form {
+      margin-top: 20px;
+      display: flex;
+      gap: 10px;
+    }
+
+    input {
+      padding: 10px;
+      flex: 1;
+      border-radius: 6px;
+      border: 1px solid #ccc;
+    }
+
+    button {
+      padding: 10px 15px;
+      background: #28a745;
+      border: none;
+      color: white;
+      border-radius: 6px;
+      cursor: pointer;
+    }
+
+    button:hover {
+      background: #1e7e34;
+    }
+  </style>
+
+  <!-- IMPORT SOCKET.IO -->
+  <script src="http://127.0.0.1:3000/socket.io/socket.io.js"></script>
+</head>
+
+<body>
+
+<div class="container">
+  <h1 id="productName">Cargando...</h1>
+  <img id="productImage" src="" width="100%" style="border-radius: 10px"/>
+
+  <p id="productDesc"></p>
+  <p><strong>Precio actual: </strong> $<span id="currentPrice">---</span></p>
+
+  <h3>Historial de pujas</h3>
+  <div id="bids">Cargando...</div>
+
+  <div class="bid-form">
+    <input type="number" id="bidAmount" placeholder="Valor de tu puja"/>
+    <button onclick="sendBid()">Pujar</button>
+  </div>
+</div>
+
+<script>
+let auctionId;
+let socket;
+
+async function loadAuctionDetail() {
+  const url = new URL(window.location.href);
+  auctionId = url.searchParams.get("id");
+
+  const token = localStorage.getItem("token");
+
+  // Cargar solo info del producto
+  const res = await fetch(`http://127.0.0.1:3000/auctions/verifyAuction/${auctionId}`, {
+    headers: { "Authorization": `Bearer ${token}` }
+  });
+
+  const data = await res.json();
+
+  document.getElementById("productName").textContent = data.product.name;
+  document.getElementById("productImage").src = data.product.image_url;
+  document.getElementById("productDesc").textContent = data.product.description;
+
+  // NO COLOCAR PRECIO AQUÍ
+  // Redis envía el precio real al conectar
+
+  loadSocket();
+  loadBidHistory();
+}
+
+async function loadBidHistory() {
+  const res = await fetch(`http://127.0.0.1:3000/auctions/${auctionId}/bids`);
+  const bids = await res.json();
+
+  const bidsDiv = document.getElementById("bids");
+  bidsDiv.innerHTML = "";
+
+  bids.forEach(b => {
+    const div = document.createElement("div");
+    div.className = "bid-item";
+    div.innerHTML = `<strong>${b.userId}</strong>: $${b.amount}`;
+    bidsDiv.appendChild(div);
+  });
+}
+
+function loadSocket() {
+  socket = io("http://127.0.0.1:3000");
+
+  // UNIRSE A LA SALA
+  socket.emit("join_auction", auctionId);
+
+  // RECIBIR ESTADO INICIAL DESDE REDIS
+  socket.on("auction_state", ({ current_price, current_winner }) => {
+    document.getElementById("currentPrice").textContent = current_price;
+  });
+
+  // NUEVA PUJA
+  socket.on("new_bid", ({ userId, amount }) => {
+    document.getElementById("currentPrice").textContent = amount;
+
+    const bidsDiv = document.getElementById("bids");
+
+    const div = document.createElement("div");
+    div.className = "bid-item";
+    div.innerHTML = `<strong>${userId}</strong>: $${amount}`;
+
+    bidsDiv.prepend(div);
+  });
+
+  socket.on("error", msg => alert(msg));
+}
+
+function sendBid() {
+  const amount = Number(document.getElementById("bidAmount").value);
+  const userId = localStorage.getItem("userId");
+
+  socket.emit("place_bid", {
+    auctionId,
+    userId,
+    amount
+  });
+}
+
+loadAuctionDetail();
+</script>
+
+</body>
+</html>

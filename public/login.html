@@ -1,0 +1,53 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Login</title>
+</head>
+<body>
+  <h1>Login</h1>
+  <form id="loginForm">
+    <input type="email" id="email" placeholder="Email" required />
+    <br /><br />
+    <input type="password" id="password" placeholder="Password" required />
+    <br /><br />
+    <button type="submit">Entrar</button>
+  </form>
+
+  <pre id="response"></pre>
+
+  <script>
+    const form = document.getElementById("loginForm");
+    const responseBox = document.getElementById("response");
+
+    form.addEventListener("submit", async (e) => {
+      e.preventDefault();
+
+      const email = document.getElementById("email").value;
+      const password = document.getElementById("password").value;
+
+      try {
+        const res = await fetch("http://127.0.0.1:3000/auth/login", {
+          method: "POST",
+          headers: {
+            "Content-Type": "application/json",
+          },
+          body: JSON.stringify({ email, password }),
+        });
+
+        const data = await res.json();
+        if (res.ok && data.token) {
+          localStorage.setItem('token', data.token);
+          localStorage.setItem('userId', data.userId);
+          window.location.href = '/public/dashboard.html';
+          return;
+        }
+        responseBox.textContent = JSON.stringify(data, null, 2);
+      } catch (err) {
+        responseBox.textContent = "Error: " + err.message;
+      }
+    });
+  </script>
+</body>
+</html>
