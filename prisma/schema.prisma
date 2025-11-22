@@ -8,16 +8,18 @@ datasource db {
 }
 
 model User {
-  id         String     @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  id         String           @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
   name       String
-  email      String     @unique
+  email      String           @unique
   password   String
-  role       String     @default("bidder")
-  created_at DateTime   @default(now()) @db.Timestamp(6)
+  role       String           @default("bidder")
+  created_at DateTime         @default(now()) @db.Timestamp(6)
 
   products       Product[]
-  ownedAuctions  Auction[] @relation("AuctionOwner")
-  wonAuctions    Auction[] @relation("AuctionWinner")
+  ownedAuctions  Auction[]       @relation("AuctionOwner")
+  wonAuctions    Auction[]       @relation("AuctionWinner")
+
+  auctionDetails AuctionDetail[] // 🔥 relación inversa
 
   @@map("users")
 }
@@ -37,19 +39,35 @@ model Product {
 }
 
 model Auction {
-  id           String        @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
-  owner_id     String        @db.Uuid
-  product_id   String        @db.Uuid
+  id           String           @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  owner_id     String           @db.Uuid
+  product_id   String           @db.Uuid
   start_price  Int?
   final_price  Int?
-  winner_id    String?       @db.Uuid
-  start_time   DateTime      @default(now()) @db.Timestamptz
+  winner_id    String?          @db.Uuid
+  start_time   DateTime         @default(now()) @db.Timestamptz
   end_time     DateTime?
   status       String
 
-  owner        User          @relation("AuctionOwner", fields: [owner_id], references: [id], onDelete: Cascade)
-  winner       User?         @relation("AuctionWinner", fields: [winner_id], references: [id])
-  product      Product       @relation(fields: [product_id], references: [id], onDelete: Cascade)
+  owner        User             @relation("AuctionOwner", fields: [owner_id], references: [id], onDelete: Cascade)
+  winner       User?            @relation("AuctionWinner", fields: [winner_id], references: [id])
+  product      Product          @relation(fields: [product_id], references: [id], onDelete: Cascade)
+
+  details      AuctionDetail[]  // 🔥 relación inversa
 
   @@map("auctions")
+}
+
+model AuctionDetail {
+  id          String   @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  auction_id  String   @db.Uuid
+  user_id     String?  @db.Uuid
+  amount      Int
+  timestamp   DateTime @db.Timestamptz
+  created_at  DateTime @default(now()) @db.Timestamptz
+
+  auction     Auction  @relation(fields: [auction_id], references: [id], onDelete: Cascade)
+  user        User?    @relation(fields: [user_id], references: [id], onDelete: SetNull)
+
+  @@map("auction_details")
 }

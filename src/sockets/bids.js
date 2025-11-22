@@ -13,6 +13,11 @@ export function bidHandler(io, socket) {
       return socket.emit("error", "Auction not found");
     }
 
+    // validar si la subasta está activa
+    if (current.status !== "active") {
+      return socket.emit("error", "Auction is not active");
+    }
+
     // Validar precio actual
     if (amount <= Number(current.current_price)) {
       return socket.emit("error", "Bid too low");

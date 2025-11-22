@@ -8,11 +8,11 @@ import auctionRoutes from "./src/routes/auctionRoutes.js";
 import socketHandlers from "./src/sockets/index.js";
 import agenda from "./src/jobs/agenda.js";
 import startAuctionJob from "./src/jobs/startAuction.js";
-// import endAuctionJob from "./src/jobs/endAuction.js";
+import endAuctionJob from "./src/jobs/endAuction.js";
 
 // definir jobs
 startAuctionJob(agenda);
-// endAuctionJob(agenda);
+endAuctionJob(agenda);
 
 // iniciar agenda
 (async function() {

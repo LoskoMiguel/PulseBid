@@ -26,9 +26,9 @@ export const createAuction = [authenticateToken, async (req, res) => {
 
     // parseamos la fecha para que tenga el formato correcto
     const parseDateTime = (input) => {
-      const fixed = input.replace(" ", "T") + ":00-05:00";
-      const date = new Date(fixed);
-      return isNaN(date.getTime()) ? null : date;
+      const iso = input.replace(" ", "T") + ":00-05:00";
+      const date = new Date(iso);
+      return isNaN(date) ? null : date;
     };
 
     const start_time = parseDateTime(start_date);
@@ -67,9 +67,11 @@ export const createAuction = [authenticateToken, async (req, res) => {
 
     // limpiamos cualquier puja previa asociada a esta subasta y programamos el job para iniciar la subasta
     await redis.del(`auction:${id}:bids`);
-    await agenda.schedule(start_time, 'startAuction', { auctionId: id });
-    // await agenda.schedule(end_time, 'endAuction', { auctionId: id });
-    // console.log('Job para finalizar subasta programado en Agenda.');
+    await agenda.schedule(start_time.toISOString(), "startAuction", { auctionId: id });
+    await agenda.schedule(end_time.toISOString(), "endAuction", { auctionId: id });
+    console.log("Scheduling startAuction at:", start_time.toISOString());
+    console.log("Scheduling endAuction at:", end_time.toISOString());
+
 
     res.status(201).json({
       message: 'Auction created successfully',
